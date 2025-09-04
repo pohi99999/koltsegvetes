@@ -19,7 +19,7 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   // A config.js fájlt soha ne cache-eljük, mindig a hálózatról kérjük le,
   // mivel érzékeny és dinamikusan generált adatokat tartalmazhat.
-  if (event.request.url.includes('config.js')) {
+  if (event.request.url.endsWith('config.js')) {
     event.respondWith(fetch(event.request));
     return;
   }
