@@ -365,6 +365,7 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
         // Service Worker regisztrálása
         if ('serviceWorker' in navigator) {
@@ -522,7 +523,15 @@
             const hideModal = () => { geminiModal.classList.remove('visible'); };
             
             const callGeminiAPI = async (prompt, retries = 3, delay = 1000) => {
-                const apiKey = "";
+                // Az API kulcsot a window objektumról olvassuk, amit a config.js állít be.
+                const apiKey = window.GEMINI_API_KEY;
+
+                // Ellenőrizzük, hogy az API kulcs be van-e állítva.
+                if (!apiKey || apiKey === "IDE_MASOLD_A_GEMINI_API_KULCSOD") {
+                    console.error("Gemini API kulcs nincs beállítva vagy érvénytelen. Kérlek, add meg a config.js fájlban.");
+                    return "Hiba: A Gemini API kulcs nincs beállítva. Kérjük, ellenőrizze a `config.js` fájlt és a beállítási útmutatót.";
+                }
+
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
                 try {
                     const response = await fetch(apiUrl, {
@@ -531,19 +540,22 @@
                         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                     });
                     if (!response.ok) {
-                        if (response.status === 429 && retries > 0) {
+                        if (response.status === 429 && retries > 0) { // Túl sok kérés
                             await new Promise(res => setTimeout(res, delay));
                             return callGeminiAPI(prompt, retries - 1, delay * 2);
                         }
-                        throw new Error(`API error: ${response.status}`);
+                        if (response.status === 400) { // Hibás kérés, valószínűleg érvénytelen kulcs
+                             return "Hiba: A Gemini API kérés hibát adott vissza. Ez gyakran érvénytelen API kulcs miatt történik. Kérjük, ellenőrizze a `config.js` fájlban megadott kulcsot.";
+                        }
+                        throw new Error(`API hiba: ${response.status}`);
                     }
                     const result = await response.json();
                     const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (!text) { throw new Error("No content received from API."); }
+                    if (!text) { throw new Error("Nem érkezett tartalom az API-tól."); }
                     return text;
                 } catch (error) {
-                    console.error("Error calling Gemini API:", error);
-                    return "Hiba történt a kapcsolat során. Kérjük, próbálja újra később.";
+                    console.error("Hiba a Gemini API hívása közben:", error);
+                    return "Hiba történt a Gemini szolgáltatással való kapcsolat során. Kérjük, próbálja újra később.";
                 }
             };
 

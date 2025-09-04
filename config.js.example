@@ -1,0 +1,3 @@
+// Másold át ezt a fájlt config.js néven, és illeszd be a saját Gemini API kulcsodat.
+// Ezt a fájlt a .gitignore kizárja a verziókövetésből, így a kulcsod biztonságban marad.
+window.GEMINI_API_KEY = "IDE_MASOLD_A_GEMINI_API_KULCSOD";

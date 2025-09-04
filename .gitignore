@@ -1,0 +1,6 @@
+# A Gemini API kulcsot tartalmazó konfigurációs fájl.
+# Ezt a fájlt a `config.js.example` alapján kell létrehozni.
+config.js
+
+# Windows rendszerfájl
+desktop.ini
