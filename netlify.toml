@@ -1,0 +1,17 @@
+# Netlify konfigurációs fájl
+[build]
+  # Ez a parancs a Netlify build folyamata során fut le.
+  # Létrehozza a `config.js` fájlt a `GEMINI_API_KEY` környezeti változó értékével.
+  # A felhasználónak ezt a környezeti változót a Netlify admin felületén kell beállítania.
+  command = "echo 'window.GEMINI_API_KEY = \"'${GEMINI_API_KEY}'\";' > config.js"
+
+  # A publikálandó mappa. Mivel az összes fájl a gyökérkönyvtárban van,
+  # a "." a jelenlegi könyvtárat jelöli.
+  publish = "."
+
+# Átirányítási szabály, hogy minden útvonal a fő HTML fájlt töltse be.
+# Ez egy "Single Page Application" (SPA) jellegű működést biztosít.
+[[redirects]]
+  from = "/*"
+  to = "/penzugyi_koveto.html"
+  status = 200

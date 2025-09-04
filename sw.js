@@ -17,17 +17,24 @@ self.addEventListener('install', event => {
 
 // Fetch esemény: a kérések kezelése
 self.addEventListener('fetch', event => {
+  // A config.js fájlt soha ne cache-eljük, mindig a hálózatról kérjük le,
+  // mivel érzékeny és dinamikusan generált adatokat tartalmazhat.
+  if (event.request.url.endsWith('config.js')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Minden más kérésnél a "cache-first" stratégiát alkalmazzuk.
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Ha a válasz a cache-ben van, onnan adjuk vissza
+        // Ha a válasz a cache-ben van, onnan adjuk vissza.
         if (response) {
           return response;
         }
-        // Különben hálózati kérést indítunk
+        // Különben hálózati kérést indítunk.
         return fetch(event.request);
-      }
-    )
+      })
   );
 });
 
