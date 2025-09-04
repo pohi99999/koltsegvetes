@@ -1,0 +1,21 @@
+{
+  "short_name": "Pénzügyi App",
+  "name": "Pénzügyi és Rezsikövető",
+  "description": "Egy egyszerű alkalmazás a személyes pénzügyek és a rezsiköltségek követésére.",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/1f2937/ffffff?text=P%C3%A9nz%C3%BCgy",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://placehold.co/512x512/1f2937/ffffff?text=P%C3%A9nz%C3%BCgy",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1f2937",
+  "background_color": "#111827"
+}

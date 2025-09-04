@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pénzügyi és Rezsikövető</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            /* gray-900 */
+            color: #f3f4f6;
+            /* gray-100 */
+        }
+
+        .tab-btn {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: #3b82f6;
+            /* blue-500 */
+            color: #ffffff;
+        }
+
+        .card {
+            background-color: #1f2937;
+            /* gray-800 */
+            border: 1px solid #374151;
+            /* gray-700 */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .form-input {
+            background-color: #374151;
+            /* gray-700 */
+            border: 1px solid #4b5563;
+            /* gray-600 */
+            color: #f3f4f6;
+            /* gray-100 */
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            /* blue-500 */
+            box-shadow: 0 0 0 2px #1e40af;
+            /* blue-500 with opacity */
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            /* blue-500 */
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+            /* blue-600 */
+        }
+
+        .btn-secondary {
+            background-color: #4b5563;
+            /* gray-600 */
+            color: #ffffff;
+        }
+
+        .btn-secondary:hover {
+            background-color: #6b7280;
+            /* gray-500 */
+        }
+
+        .list-item {
+            background-color: #374151;
+            /* gray-700 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .income-amount {
+            color: #22c55e;
+            /* green-500 */
+        }
+
+        .expense-amount {
+            color: #ef4444;
+            /* red-500 */
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: #1f2937;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            border: 1px solid #374151;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .modal-content .response-text {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: #d1d5db;
+            /* gray-300 */
+        }
+
+        .modal-content .response-text ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .modal-content .response-text li {
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-content .response-text strong {
+            color: #ffffff;
+        }
+
+        .loader {
+            border: 4px solid #4b5563;
+            /* gray-600 */
+            border-top: 4px solid #3b82f6;
+            /* blue-500 */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <div class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
+
+        <!-- Header and Navigation -->
+        <header class="mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white text-center mb-6">Pénzügyi és Rezsikövető</h1>
+            <nav class="flex justify-center items-center border-b border-gray-700">
+                <button id="btn-budget" class="tab-btn active text-lg font-semibold py-3 px-6 text-gray-400">Költségvetés</button>
+                <button id="btn-utilities" class="tab-btn text-lg font-semibold py-3 px-6 text-gray-400">Rezsikövető</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Budget Section -->
+            <section id="budget-section">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="card">
+                        <h3 class="text-lg font-semibold text-gray-400 mb-2">Egyenleg</h3>
+                        <p id="balance-amount" class="text-3xl font-bold text-white">0 Ft</p>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-lg font-semibold text-gray-400 mb-2">Összes bevétel</h3>
+                        <p id="total-income-amount" class="text-3xl font-bold income-amount">0 Ft</p>
+                    </div>
+                    <div class="card">
+                        <h3 class="text-lg font-semibold text-gray-400 mb-2">Összes kiadás</h3>
+                        <p id="total-expense-amount" class="text-3xl font-bold expense-amount">0 Ft</p>
+                    </div>
+                </div>
+
+                <!-- Gemini AI Feature Buttons -->
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8 flex-wrap">
+                    <button id="ask-financial-question-btn" class="btn btn-secondary">
+                        ✨ Pénzügyi Kérdés
+                    </button>
+                    <button id="analyze-budget-btn" class="btn btn-secondary">
+                        ✨ Pénzügyi Elemzés
+                    </button>
+                    <button id="create-budget-btn" class="btn btn-secondary">
+                        ✨ Költségvetés Tervező
+                    </button>
+                    <button id="financial-goal-btn" class="btn btn-secondary">
+                        ✨ Pénzügyi Cél Tervező
+                    </button>
+                    <button id="debt-plan-btn" class="btn btn-secondary">
+                        ✨ Adósságrendezési Terv
+                    </button>
+                    <button id="investment-helper-btn" class="btn btn-secondary">
+                        ✨ Befektetési Segéd
+                    </button>
+                </div>
+
+                <!-- Add Transaction Form -->
+                <div class="card mb-8">
+                    <h2 class="text-2xl font-bold mb-4">Új tranzakció hozzáadása</h2>
+                    <form id="transaction-form" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="description" class="block mb-2 text-sm font-medium text-gray-300">Leírás</label>
+                                <input type="text" id="description" class="form-input" placeholder="pl. Heti bevásárlás" required>
+                            </div>
+                            <div class="relative">
+                                <label for="category" class="block mb-2 text-sm font-medium text-gray-300">Kategória</label>
+                                <input type="text" id="category" class="form-input pr-10" placeholder="pl. Élelmiszer">
+                                <button type="button" id="suggest-category-btn" title="Kategória javaslat kérése" class="absolute right-2 bottom-2 p-1 text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed">✨</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="sm:col-span-1">
+                                <label for="amount" class="block mb-2 text-sm font-medium text-gray-300">Összeg (Ft)</label>
+                                <input type="number" id="amount" class="form-input" placeholder="pl. 15000" required>
+                            </div>
+                            <div class="sm:col-span-1">
+                                <label for="type" class="block mb-2 text-sm font-medium text-gray-300">Típus</label>
+                                <select id="type" class="form-input">
+                                    <option value="income">Bevétel</option>
+                                    <option value="expense">Kiadás</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-1 self-end">
+                                <button type="submit" class="btn btn-primary w-full">Hozzáadás</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+
+                <!-- Transaction Lists -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="card">
+                        <h2 class="text-2xl font-bold mb-4">Bevételek</h2>
+                        <ul id="income-list" class="space-y-3"></ul>
+                    </div>
+                    <div class="card">
+                        <h2 class="text-2xl font-bold mb-4">Kiadások</h2>
+                        <ul id="expense-list" class="space-y-3"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Utilities Section -->
+            <section id="utilities-section" class="hidden">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-6">Fogyasztás áttekintő</h2>
+                    <div id="utilities-table" class="space-y-6"></div>
+                    <div class="mt-8 pt-6 border-t border-gray-700">
+                        <h3 class="text-xl font-bold mb-4">Óraállás frissítése</h3>
+                        <form id="update-utility-form" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <div class="md:col-span-5">
+                                <label for="utility-select" class="block mb-2 text-sm font-medium text-gray-300">Mérőóra</label>
+                                <select id="utility-select" class="form-input">
+                                    <option value="electricity">Áram</option>
+                                    <option value="gas">Gáz</option>
+                                    <option value="water">Víz</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-4">
+                                <label for="new-reading" class="block mb-2 text-sm font-medium text-gray-300">Új óraállás</label>
+                                <input type="number" step="0.001" id="new-reading" class="form-input" placeholder="pl. 13500" required>
+                            </div>
+                            <div class="md:col-span-3">
+                                <button type="submit" class="btn btn-primary w-full">Frissítés</button>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- Gemini AI Feature Buttons for Utilities -->
+                    <div
+                        class="flex flex-col sm:flex-row justify-center gap-4 mt-8 pt-6 border-t border-gray-700 flex-wrap">
+                        <button id="get-saving-tips-btn" class="btn btn-secondary">
+                           ✨ Takarékossági Tippek
+                        </button>
+                        <button id="estimate-cost-btn" class="btn btn-secondary">
+                           ✨ Költségbecslés
+                        </button>
+                        <button id="anomaly-check-btn" class="btn btn-secondary">
+                           ✨ Anomália Ellenőrzés
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Gemini Response Modal -->
+    <div id="gemini-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="modal-title" class="text-2xl font-bold">Elemzés</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Service Worker regisztrálása
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE MANAGEMENT ---
+            let state = {
+                transactions: JSON.parse(localStorage.getItem('transactions')) || [],
+                utilities: JSON.parse(localStorage.getItem('utilities')) || {
+                    electricity: { name: 'Áram', unit: 'kWh', previous: 12599, current: 13012 },
+                    gas: { name: 'Gáz', unit: 'm³', previous: 879.287, current: 879.287 },
+                    water: { name: 'Víz', unit: 'm³', previous: 29.587, current: 33.804 }
+                }
+            };
+
+            // --- SELECTORS ---
+            const btnBudget = document.getElementById('btn-budget');
+            const btnUtilities = document.getElementById('btn-utilities');
+            const budgetSection = document.getElementById('budget-section');
+            const utilitiesSection = document.getElementById('utilities-section');
+            
+            const transactionForm = document.getElementById('transaction-form');
+            const descriptionInput = document.getElementById('description');
+            const categoryInput = document.getElementById('category');
+            const suggestCategoryBtn = document.getElementById('suggest-category-btn');
+            const amountInput = document.getElementById('amount');
+            const typeInput = document.getElementById('type');
+            const incomeList = document.getElementById('income-list');
+            const expenseList = document.getElementById('expense-list');
+            const balanceAmountEl = document.getElementById('balance-amount');
+            const totalIncomeAmountEl = document.getElementById('total-income-amount');
+            const totalExpenseAmountEl = document.getElementById('total-expense-amount');
+
+            const utilitiesTable = document.getElementById('utilities-table');
+            const updateUtilityForm = document.getElementById('update-utility-form');
+            const utilitySelect = document.getElementById('utility-select');
+            const newReadingInput = document.getElementById('new-reading');
+
+            // Gemini Feature Selectors
+            const askFinancialQuestionBtn = document.getElementById('ask-financial-question-btn');
+            const debtPlanBtn = document.getElementById('debt-plan-btn');
+            const financialGoalBtn = document.getElementById('financial-goal-btn');
+            const createBudgetBtn = document.getElementById('create-budget-btn');
+            const analyzeBudgetBtn = document.getElementById('analyze-budget-btn');
+            const investmentHelperBtn = document.getElementById('investment-helper-btn');
+            const estimateCostBtn = document.getElementById('estimate-cost-btn');
+            const getSavingTipsBtn = document.getElementById('get-saving-tips-btn');
+            const anomalyCheckBtn = document.getElementById('anomaly-check-btn');
+            const geminiModal = document.getElementById('gemini-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            // --- FUNCTIONS ---
+            
+            const formatCurrency = (amount) => new Intl.NumberFormat('hu-HU', { style: 'currency', currency: 'HUF', minimumFractionDigits: 0 }).format(amount);
+            const formatReading = (amount) => new Intl.NumberFormat('hu-HU', { minimumFractionDigits: 0, maximumFractionDigits: 3 }).format(amount);
+
+            const saveState = () => {
+                localStorage.setItem('transactions', JSON.stringify(state.transactions));
+                localStorage.setItem('utilities', JSON.stringify(state.utilities));
+            };
+
+            const render = () => {
+                renderTransactions();
+                renderSummary();
+                renderUtilities();
+            };
+
+            const renderSummary = () => {
+                const incomes = state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+                const expenses = state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+                const balance = incomes - expenses;
+
+                balanceAmountEl.textContent = formatCurrency(balance);
+                totalIncomeAmountEl.textContent = formatCurrency(incomes);
+                totalExpenseAmountEl.textContent = formatCurrency(expenses);
+                
+                balanceAmountEl.className = 'text-3xl font-bold ';
+                balanceAmountEl.classList.add(balance >= 0 ? 'text-white' : 'expense-amount');
+            };
+
+            const renderTransactions = () => {
+                incomeList.innerHTML = '';
+                expenseList.innerHTML = '';
+                const incomes = state.transactions.filter(t => t.type === 'income');
+                const expenses = state.transactions.filter(t => t.type === 'expense');
+                if (incomes.length === 0) { incomeList.innerHTML = `<p class="text-gray-400">Nincsenek bevételek.</p>`; } 
+                else { incomes.forEach(t => addTransactionToDOM(t, incomeList)); }
+                if (expenses.length === 0) { expenseList.innerHTML = `<p class="text-gray-400">Nincsenek kiadások.</p>`; } 
+                else { expenses.forEach(t => addTransactionToDOM(t, expenseList)); }
+            };
+
+            const addTransactionToDOM = (transaction, list) => {
+                const item = document.createElement('li');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div class="flex-grow">
+                        <p class="font-medium">${transaction.description}</p>
+                        ${transaction.category ? `<span class="mt-1 inline-block text-xs bg-gray-600 text-gray-300 px-2 py-0.5 rounded-full">${transaction.category}</span>` : ''}
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-semibold ${transaction.type === 'income' ? 'income-amount' : 'expense-amount'} mr-4">${formatCurrency(transaction.amount)}</span>
+                        <button data-id="${transaction.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+
+            const renderUtilities = () => {
+                utilitiesTable.innerHTML = '';
+                for (const key in state.utilities) {
+                    const utility = state.utilities[key];
+                    const consumption = utility.current - utility.previous;
+                    const utilityEl = document.createElement('div');
+                    utilityEl.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 items-center bg-gray-800 p-4 rounded-lg';
+                    utilityEl.innerHTML = `
+                        <div class="col-span-2 md:col-span-1">
+                            <p class="text-xl font-bold text-white">${utility.name}</p>
+                            <p class="text-sm text-gray-400">Fogyasztás</p>
+                            <p class="text-lg font-semibold ${consumption > 0 ? 'text-blue-400' : 'text-gray-300'}">${formatReading(consumption)} ${utility.unit}</p>
+                        </div>
+                        <div class="text-center">
+                             <p class="text-sm text-gray-400">Előző óraállás</p>
+                             <p class="text-lg font-medium">${formatReading(utility.previous)} ${utility.unit}</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-400">Jelenlegi óraállás</p>
+                            <p class="text-lg font-medium">${formatReading(utility.current)} ${utility.unit}</p>
+                        </div>
+                    `;
+                    utilitiesTable.appendChild(utilityEl);
+                }
+            };
+
+             // --- GEMINI API AND MODAL FUNCTIONS ---
+            const showModal = (title, content) => {
+                modalTitle.textContent = title;
+                modalBody.innerHTML = content;
+                geminiModal.classList.add('visible');
+            };
+
+            const hideModal = () => { geminiModal.classList.remove('visible'); };
+            
+            const callGeminiAPI = async (prompt, retries = 3, delay = 1000) => {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    if (!response.ok) {
+                        if (response.status === 429 && retries > 0) {
+                            await new Promise(res => setTimeout(res, delay));
+                            return callGeminiAPI(prompt, retries - 1, delay * 2);
+                        }
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) { throw new Error("No content received from API."); }
+                    return text;
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    return "Hiba történt a kapcsolat során. Kérjük, próbálja újra később.";
+                }
+            };
+
+            // --- EVENT HANDLERS ---
+            
+            const switchTab = (activeBtn, inactiveBtn, activeSection, inactiveSection) => {
+                activeBtn.classList.add('active');
+                inactiveBtn.classList.remove('active');
+                activeSection.classList.remove('hidden');
+                inactiveSection.classList.add('hidden');
+            };
+
+            btnBudget.addEventListener('click', () => switchTab(btnBudget, btnUtilities, budgetSection, utilitiesSection));
+            btnUtilities.addEventListener('click', () => switchTab(btnUtilities, btnBudget, utilitiesSection, budgetSection));
+
+            transactionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newTransaction = {
+                    id: Date.now(),
+                    description: descriptionInput.value,
+                    amount: parseFloat(amountInput.value),
+                    type: typeInput.value,
+                    category: categoryInput.value.trim(),
+                };
+                if (newTransaction.description.trim() === '' || isNaN(newTransaction.amount) || newTransaction.amount <= 0) return;
+                state.transactions.push(newTransaction);
+                saveState();
+                render();
+                transactionForm.reset();
+            });
+            
+            document.body.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.delete-btn');
+                if (deleteBtn) {
+                    const id = parseInt(deleteBtn.dataset.id);
+                    state.transactions = state.transactions.filter(t => t.id !== id);
+                    saveState();
+                    render();
+                }
+            });
+
+            updateUtilityForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const utilityKey = utilitySelect.value;
+                const newReading = parseFloat(newReadingInput.value);
+                if (isNaN(newReading) || newReading < state.utilities[utilityKey].current) { newReadingInput.value = ''; return; }
+                state.utilities[utilityKey].previous = state.utilities[utilityKey].current;
+                state.utilities[utilityKey].current = newReading;
+                saveState();
+                renderUtilities();
+                updateUtilityForm.reset();
+            });
+
+            // Gemini Feature Event Handlers
+            closeModalBtn.addEventListener('click', hideModal);
+            geminiModal.addEventListener('click', (e) => { if (e.target === geminiModal) { hideModal(); } });
+            
+            suggestCategoryBtn.addEventListener('click', async () => {
+                const description = descriptionInput.value.trim();
+                if (!description) return;
+
+                suggestCategoryBtn.disabled = true;
+                suggestCategoryBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+
+                const prompt = `You are an expert in categorizing financial transactions in Hungary. Based on the transaction description, suggest the most likely category from this list: Élelmiszer, Rezsiköltség, Lakhatás, Közlekedés, Szórakozás, Egészségügy, Ruházkodás, Oktatás, Megtakarítás, Egyéb. Provide only the single, most relevant category name as a one-word answer. Description: '${description}'`;
+                const category = await callGeminiAPI(prompt);
+                categoryInput.value = category.replace(/[\n*.]/g, '').trim();
+
+                suggestCategoryBtn.disabled = false;
+                suggestCategoryBtn.innerHTML = '✨';
+            });
+
+            analyzeBudgetBtn.addEventListener('click', async () => {
+                if (state.transactions.length === 0) {
+                    showModal("Pénzügyi Elemzés", "<p>Nincsenek tranzakciók az elemzéshez. Adjon hozzá bevételeket és kiadásokat!</p>");
+                    return;
+                }
+                showModal("Pénzügyi Elemzés", '<div class="loader"></div><p class="text-center text-gray-400">Elemzés folyamatban...</p>');
+                const incomes = state.transactions.filter(t => t.type === 'income').map(t => `- ${t.description}: ${formatCurrency(t.amount)}`).join('\n');
+                const expenses = state.transactions.filter(t => t.type === 'expense').map(t => `- ${t.description} (${t.category || 'Nincs kat.'}): ${formatCurrency(t.amount)}`).join('\n');
+                const prompt = `You are a helpful financial assistant. Analyze the following income and expense data for a user in Hungary. Provide a short, easy-to-understand summary of their spending habits in one paragraph. Then, offer 3 actionable, personalized savings tips in a bulleted list based on their categorized expenses. The user has a basic understanding of finance. Respond ONLY in Hungarian.\n\nHere is the data:\nBevételek:\n${incomes || 'Nincs'}\n\nKiadások:\n${expenses || 'Nincs'}`;
+                const response = await callGeminiAPI(prompt);
+                modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+            });
+
+            getSavingTipsBtn.addEventListener('click', async () => {
+                showModal("Takarékossági Tippek", '<div class="loader"></div><p class="text-center text-gray-400">Tippek generálása...</p>');
+                const { electricity, gas, water } = state.utilities;
+                const prompt = `You are an expert on home energy and water conservation in Hungary. Based on the following monthly consumption data, provide 3 practical and personalized tips to help the user save money on their utility bills. Consider the context of living in Hungary. The tips should be easy to implement. Respond ONLY in Hungarian.\n\nHere is the consumption data:\n- Áram: ${formatReading(electricity.current - electricity.previous)} kWh\n- Gáz: ${formatReading(gas.current - gas.previous)} m³\n- Víz: ${formatReading(water.current - water.previous)} m³`;
+                const response = await callGeminiAPI(prompt);
+                modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+            });
+
+            createBudgetBtn.addEventListener('click', () => {
+                 showModal("Intelligens Költségvetés Tervező", `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">Adja meg a havi nettó bevételét, és a mesterséges intelligencia segít létrehozni egy személyre szabott költségvetési javaslatot.</p>
+                        <div>
+                            <label for="monthly-income" class="block mb-2 text-sm font-medium text-gray-300">Havi nettó bevétel (Ft)</label>
+                            <input type="number" id="monthly-income" class="form-input" placeholder="pl. 450000">
+                        </div>
+                        <button id="generate-budget-submit" class="btn btn-primary w-full">Költségvetés Létrehozása</button>
+                    </div>
+                `);
+                
+                document.getElementById('generate-budget-submit').addEventListener('click', async () => {
+                    const incomeInput = document.getElementById('monthly-income');
+                    const income = parseFloat(incomeInput.value);
+                    if (isNaN(income) || income <= 0) { incomeInput.classList.add('border-red-500'); return; }
+                    modalBody.innerHTML = '<div class="loader"></div><p class="text-center text-gray-400">Költségvetés tervezése...</p>';
+                    const expenses = state.transactions.filter(t => t.type === 'expense').map(t => t.description).join(', ');
+                    const prompt = `You are a helpful financial planner in Hungary. A user wants to create a monthly budget. Their total monthly net income is ${income} HUF. Their current list of expenses gives an idea of their spending categories: ${expenses || 'Nincsenek még rögzített kiadások'}. Based on this, create a suggested monthly budget using a popular method like the 50/30/20 rule (Needs/Wants/Savings), but adapt it to the user's context. Provide the output in a clear, structured format with categories and allocated amounts in HUF. Explain the budgeting principle briefly. The response must be ONLY in Hungarian.`;
+                    const response = await callGeminiAPI(prompt);
+                    modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+                });
+            });
+
+            estimateCostBtn.addEventListener('click', async () => {
+                showModal("Várható Költségek Becslése", '<div class="loader"></div><p class="text-center text-gray-400">Számítás folyamatban...</p>');
+                const { electricity, gas, water } = state.utilities;
+                const prompt = `You are an expert on residential utility prices in Hungary as of late 2025. Based on the following monthly consumption data, calculate an estimated total cost in HUF. Provide a breakdown for each utility (electricity, gas, water) and then a final total amount. Use current, realistic average prices for residential customers in Hungary, considering any government-regulated pricing schemes (rezsicsökkentés). The response must be ONLY in Hungarian.\n\nConsumption Data:\n- Áram: ${formatReading(electricity.current - electricity.previous)} kWh\n- Gáz: ${formatReading(gas.current - gas.previous)} m³\n- Víz: ${formatReading(water.current - water.previous)} m³`;
+                const response = await callGeminiAPI(prompt);
+                modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+            });
+            
+            financialGoalBtn.addEventListener('click', () => {
+                 showModal("Pénzügyi Cél Tervező", `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">Tervezze meg pénzügyi céljait! Adja meg a cél nevét és a szükséges összeget.</p>
+                        <div>
+                            <label for="goal-name" class="block mb-2 text-sm font-medium text-gray-300">Cél neve</label>
+                            <input type="text" id="goal-name" class="form-input" placeholder="pl. Új laptop">
+                        </div>
+                        <div>
+                            <label for="goal-amount" class="block mb-2 text-sm font-medium text-gray-300">Célösszeg (Ft)</label>
+                            <input type="number" id="goal-amount" class="form-input" placeholder="pl. 500000">
+                        </div>
+                        <button id="generate-goal-submit" class="btn btn-primary w-full">Terv Létrehozása</button>
+                    </div>
+                `);
+
+                document.getElementById('generate-goal-submit').addEventListener('click', async () => {
+                    const goalNameInput = document.getElementById('goal-name');
+                    const goalAmountInput = document.getElementById('goal-amount');
+                    const goalName = goalNameInput.value.trim();
+                    const goalAmount = parseFloat(goalAmountInput.value);
+
+                    if (!goalName || isNaN(goalAmount) || goalAmount <= 0) {
+                        if (!goalName) goalNameInput.classList.add('border-red-500');
+                        if (isNaN(goalAmount) || goalAmount <= 0) goalAmountInput.classList.add('border-red-500');
+                        return;
+                    }
+
+                    modalBody.innerHTML = '<div class="loader"></div><p class="text-center text-gray-400">Pénzügyi terv készítése...</p>';
+                    const totalIncome = state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+                    const totalExpense = state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+                    const prompt = `You are a helpful financial planning assistant in Hungary. A user wants to achieve a financial goal. Goal: '${goalName}', Target Amount: ${goalAmount} HUF. Their current recorded total monthly income is ${totalIncome} HUF and total monthly expenses are ${totalExpense} HUF. Create a simple, motivational, step-by-step savings plan for them. Suggest a realistic monthly savings amount based on their income/expense difference and calculate the timeframe to reach the goal. Provide some encouragement and maybe one extra tip related to their goal. The response must be ONLY in Hungarian.`;
+                    const response = await callGeminiAPI(prompt);
+                    modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+                });
+            });
+
+            debtPlanBtn.addEventListener('click', () => {
+                showModal("Adósságrendezési Terv", `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">Tervezze meg, hogyan szabaduljon meg adósságától. Adja meg a tartozás részleteit.</p>
+                        <div>
+                            <label for="debt-amount" class="block mb-2 text-sm font-medium text-gray-300">Teljes tartozás (Ft)</label>
+                            <input type="number" id="debt-amount" class="form-input" placeholder="pl. 1000000">
+                        </div>
+                        <div>
+                            <label for="interest-rate" class="block mb-2 text-sm font-medium text-gray-300">Éves kamatláb (%)</label>
+                            <input type="number" id="interest-rate" class="form-input" placeholder="pl. 9.9">
+                        </div>
+                        <div>
+                            <label for="monthly-payment" class="block mb-2 text-sm font-medium text-gray-300">Tervezett havi törlesztőrészlet (Ft)</label>
+                            <input type="number" id="monthly-payment" class="form-input" placeholder="pl. 50000">
+                        </div>
+                        <button id="generate-debt-plan-submit" class="btn btn-primary w-full">Terv Létrehozása</button>
+                    </div>
+                `);
+
+                document.getElementById('generate-debt-plan-submit').addEventListener('click', async () => {
+                    const debtAmountInput = document.getElementById('debt-amount');
+                    const interestRateInput = document.getElementById('interest-rate');
+                    const monthlyPaymentInput = document.getElementById('monthly-payment');
+
+                    const debtAmount = parseFloat(debtAmountInput.value);
+                    const interestRate = parseFloat(interestRateInput.value);
+                    const monthlyPayment = parseFloat(monthlyPaymentInput.value);
+
+                    let isValid = true;
+                    if (isNaN(debtAmount) || debtAmount <= 0) {
+                        debtAmountInput.classList.add('border-red-500');
+                        isValid = false;
+                    }
+                    if (isNaN(interestRate) || interestRate < 0) {
+                        interestRateInput.classList.add('border-red-500');
+                        isValid = false;
+                    }
+                    if (isNaN(monthlyPayment) || monthlyPayment <= 0) {
+                        monthlyPaymentInput.classList.add('border-red-500');
+                        isValid = false;
+                    }
+                    if (!isValid) return;
+
+                    modalBody.innerHTML = '<div class="loader"></div><p class="text-center text-gray-400">Adósságrendezési terv készítése...</p>';
+
+                    const prompt = `You are a helpful financial planning assistant in Hungary. A user wants to create a debt repayment plan.
+                    - Total Debt: ${debtAmount} HUF
+                    - Annual Interest Rate: ${interestRate}%
+                    - Planned Monthly Payment: ${monthlyPayment} HUF
+
+                    Please provide a clear, encouraging analysis. Calculate the following:
+                    1.  The estimated time it will take to pay off the debt (in years and months).
+                    2.  The total amount of interest they will pay over the life of the loan.
+                    3.  The total amount they will have paid back.
+
+                    After the calculations, provide one or two actionable tips for paying off the debt faster (e.g., the effect of a small extra payment). Keep the language simple and motivational. The response must be ONLY in Hungarian.`;
+
+                    const response = await callGeminiAPI(prompt);
+                    modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+                });
+            });
+
+            askFinancialQuestionBtn.addEventListener('click', () => {
+                showModal("Pénzügyi Kérdés", `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">Tegye fel a pénzügyeivel kapcsolatos kérdését! Az MI a rögzített adatai alapján próbál válaszolni.</p>
+                        <div>
+                            <label for="user-question" class="block mb-2 text-sm font-medium text-gray-300">Az Ön kérdése</label>
+                            <textarea id="user-question" class="form-input" rows="4" placeholder="pl. A jelenlegi kiadásaim mellett megengedhetek magamnak egy havi 20 000 Ft-os edzőtermi bérletet?"></textarea>
+                        </div>
+                        <button id="submit-question-btn" class="btn btn-primary w-full">Válasz Kérése</button>
+                    </div>
+                `);
+
+                document.getElementById('submit-question-btn').addEventListener('click', async () => {
+                    const questionInput = document.getElementById('user-question');
+                    const question = questionInput.value.trim();
+
+                    if (!question) {
+                        questionInput.classList.add('border-red-500');
+                        return;
+                    }
+
+                    modalBody.innerHTML = '<div class="loader"></div><p class="text-center text-gray-400">Válasz keresése...</p>';
+
+                    const totalIncome = state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+                    const totalExpense = state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+                    const balance = totalIncome - totalExpense;
+                    const expenseList = state.transactions
+                        .filter(t => t.type === 'expense')
+                        .map(t => `- ${t.category || 'Kategorizálatlan'}: ${t.description} (${formatCurrency(t.amount)})`)
+                        .join('\n');
+
+                    const prompt = `You are a helpful and cautious Hungarian financial assistant. A user has a financial question. You MUST NOT give direct financial advice (e.g., "you should do X"). Instead, provide information, analyze their situation based on the data provided, and present options or things to consider to help them make their own informed decision.
+
+                    Here is the user's financial summary for the current period:
+                    - Total Income: ${formatCurrency(totalIncome)}
+                    - Total Expenses: ${formatCurrency(totalExpense)}
+                    - Current Balance (Income - Expenses): ${formatCurrency(balance)}
+                    - List of recent expenses:
+                    ${expenseList || 'Nincsenek rögzített kiadások.'}
+
+                    Here is the user's question:
+                    "${question}"
+
+                    Please answer the user's question based on their financial context. Structure your response clearly. The response must be ONLY in Hungarian.`;
+
+                    const response = await callGeminiAPI(prompt);
+                    modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+                });
+            });
+            
+            investmentHelperBtn.addEventListener('click', () => {
+                const balance = state.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0) -
+                                state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+                showModal("Befektetési Segéd", `
+                    <div class="space-y-4">
+                        <p class="text-gray-300">Általános befektetési ötleteket kaphat a rendelkezésre álló összeg és a kockázati étvágya alapján. <strong>Ez nem pénzügyi tanácsadás!</strong></p>
+                        <div>
+                            <label for="investment-amount" class="block mb-2 text-sm font-medium text-gray-300">Befektetni kívánt összeg (Ft)</label>
+                            <input type="number" id="investment-amount" class="form-input" value="${Math.max(0, balance)}">
+                        </div>
+                        <div>
+                            <label for="risk-level" class="block mb-2 text-sm font-medium text-gray-300">Kockázati szint</label>
+                            <select id="risk-level" class="form-input">
+                                <option value="alacsony">Alacsony</option>
+                                <option value="közepes">Közepes</option>
+                                <option value="magas">Magas</option>
+                            </select>
+                        </div>
+                        <button id="generate-investment-ideas-submit" class="btn btn-primary w-full">Ötletek Kérése</button>
+                    </div>
+                `);
+
+                document.getElementById('generate-investment-ideas-submit').addEventListener('click', async () => {
+                    const amountInput = document.getElementById('investment-amount');
+                    const riskLevelInput = document.getElementById('risk-level');
+                    const amount = parseFloat(amountInput.value);
+                    const riskLevel = riskLevelInput.value;
+
+                    if (isNaN(amount) || amount <= 0) {
+                        amountInput.classList.add('border-red-500');
+                        return;
+                    }
+
+                    modalBody.innerHTML = '<div class="loader"></div><p class="text-center text-gray-400">Befektetési ötletek keresése...</p>';
+
+                    const prompt = `You are a helpful financial educator in Hungary. A user is looking for general investment ideas.
+                    - Investment Amount: ${amount} HUF
+                    - Risk Tolerance: ${riskLevel}
+
+                    Please provide a few general, educational investment ideas (e.g., types of assets, funds) that someone with this profile might explore in Hungary.
+                    Structure the response with a clear heading for each risk level.
+                    Crucially, you MUST start the response with a very clear, bolded disclaimer in Hungarian: "**FONTOS: Ez nem minősül pénzügyi tanácsadásnak vagy befektetési ajánlásnak. A tartalom kizárólag tájékoztató és oktatási jellegű. Bármilyen befektetési döntés előtt konzultáljon szakemberrel!**"
+                    The rest of the response must also be ONLY in Hungarian.`;
+
+                    const response = await callGeminiAPI(prompt);
+                    modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+                });
+            });
+
+            anomalyCheckBtn.addEventListener('click', async () => {
+                showModal("Fogyasztási Anomália Ellenőrzés", '<div class="loader"></div><p class="text-center text-gray-400">Fogyasztás elemzése...</p>');
+                
+                const { electricity, gas, water } = state.utilities;
+                const electricityConsumption = electricity.current - electricity.previous;
+                const gasConsumption = gas.current - gas.previous;
+                const waterConsumption = water.current - water.previous;
+
+                const prompt = `You are a home energy efficiency expert in Hungary. Analyze the following monthly utility consumption data for a household.
+                - Electricity: ${formatReading(electricityConsumption)} kWh
+                - Gas: ${formatReading(gasConsumption)} m³
+                - Water: ${formatReading(waterConsumption)} m³
+
+                Please perform the following steps:
+                1.  Briefly assess if any of these values seem unusually high for a typical Hungarian household (e.g., a family of 2-3 in an apartment or small house).
+                2.  For any value that seems high, suggest potential common causes (e.g., old appliances, water leak, poor insulation).
+                3.  Provide one simple, actionable tip for each utility to help the user investigate or reduce consumption.
+                Keep the tone helpful and informative, not alarming. The response must be ONLY in Hungarian.`;
+                
+                const response = await callGeminiAPI(prompt);
+                modalBody.innerHTML = `<div class="response-text">${response}</div>`;
+            });
+
+
+            // --- INITIALIZATION ---
+            render();
+        });
+    </script>
+</body>
+
+</html>
